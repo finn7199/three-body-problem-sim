@@ -17,7 +17,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void processInput(GLFWwindow* window);
 
 // Camera
-Camera camera(glm::vec3(0.0f, 0.0f, 500.0f));
+Camera camera(glm::vec3(0.0f, 300.0f, 650.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, -20.0f);
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -38,7 +38,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "3D Three-Body Simulation (Leapfrog Method)", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "3D Three-Body Simulation (RK4 Method)", NULL, NULL);
     if (window == NULL) { /* ... error handling ... */ return -1; }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -85,7 +85,7 @@ int main() {
         sphereShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
         sphereShader.setVec3("lightPos", lightPos);
 
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 2000.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
         glm::mat4 view = camera.GetViewMatrix();
         sphereShader.setMat4("projection", projection);
         sphereShader.setMat4("view", view);

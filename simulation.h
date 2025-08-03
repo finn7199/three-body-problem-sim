@@ -11,4 +11,8 @@ public:
     Simulation();
     void update(float dt);
     void draw(Shader& sphereShader);
+
+private:
+    // Helper function to calculate accelerations for a given state
+    std::vector<glm::vec3> calculateAccelerations(const std::vector<Body>& currentBodies);
 };
