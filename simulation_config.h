@@ -22,25 +22,31 @@ struct BodyProperties {
 
 // An array holding the properties of our three bodies.
 const std::vector<BodyProperties> initialBodies = {
+    // mass: Determines the body's gravitational pull.
+    // radius: The visual size of the sphere in 3D space.
+    // initial position (x, y, z): Where the body starts.
+    // initial velocity (vx, vy, vz): The direction and speed it starts with.
+    // color (R, G, B): The color of the sphere, from 0.0 to 1.0.
+
     {
-        // "Star" - Unchanged
-        10000.0f, 25.0f,
+        // P1
+        5000.0f, 25.0f,
         glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, -60.0f),
         glm::vec3(1.0f, 1.0f, 0.7f)
     },
     {
-        // "Planet" - Now more massive and further away
-        1000.0f, 20.0f,                       // Increased mass from 300 to 1000
-        glm::vec3(400.0f, 0.0f, 0.0f),      // Increased distance from 250 to 400
-        glm::vec3(0.0f, 195.0f, 0.0f),      // Adjusted orbital velocity for the new distance
+        // P2
+        5000.0f, 20.0f,                       
+        glm::vec3(420.0f, -50.0f, 0.0f),      
+        glm::vec3(0.0f, -60.0f, 0.0f), 
         glm::vec3(0.4f, 0.6f, 1.0f)
     },
     {
-        // "Moon"
-        30.0f, 4.0f,                      // Increased mass from 10 to 30, and radius from 3 to 4
-        glm::vec3(420.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 195.0f + 60.0f, 0.0f),
+        // P3
+        5000.0f, 13.0f,
+        glm::vec3(-420.0f, 50.0f, 0.0f), 
+        glm::vec3(0.0f, 60.0f, 0.0f),
         glm::vec3(0.8f, 0.8f, 0.8f)
     }
 };
