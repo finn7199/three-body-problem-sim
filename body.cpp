@@ -7,12 +7,6 @@
 Body::Body(float m, float r, glm::vec3 pos, glm::vec3 vel, glm::vec3 col)
     : mass(m), radius(r), position(pos), velocity(vel), color(col), acceleration(0.0f) {
     setupSphereMesh();
-    setupTrailMesh();
-}
-
-void Body::setupTrailMesh() {
-    glGenVertexArrays(1, &trailVAO);
-    glGenBuffers(1, &trailVBO);
 }
 
 void Body::setupSphereMesh() {
@@ -82,24 +76,11 @@ void Body::setupSphereMesh() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, (void*)0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
 }
 
 
-void Body::draw(Shader& sphereShader, Shader& trailShader) {
-    // --- Draw the Trail ---
-    if (trail.size() > 1) {
-        trailShader.use();
-        trailShader.setVec3("objectColor", color);
-
-        glBindVertexArray(trailVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, trailVBO);
-        glBufferData(GL_ARRAY_BUFFER, trail.size() * sizeof(glm::vec3), &trail[0], GL_DYNAMIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-        glDrawArrays(GL_LINE_STRIP, 0, trail.size());
-    }
-
+void Body::draw(Shader& sphereShader) {
     // --- Draw the Body ---
     sphereShader.use();
     sphereShader.setVec3("objectColor", color);
@@ -109,6 +90,9 @@ void Body::draw(Shader& sphereShader, Shader& trailShader) {
     sphereShader.setMat4("model", model);
 
     glBindVertexArray(bodyVAO);
+    glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+
     glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
 
     glBindVertexArray(0);

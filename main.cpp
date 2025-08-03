@@ -26,7 +26,6 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-const float FIXED_TIMESTEP = 1.0f / 120.0f; // Run physics at 120Hz
 float accumulator = 0.0f;
 
 int main() {
@@ -39,7 +38,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "3D Three-Body Simulation", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "3D Three-Body Simulation (Leapfrog Method)", NULL, NULL);
     if (window == NULL) { /* ... error handling ... */ return -1; }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -57,7 +56,6 @@ int main() {
 
     // Build and compile shaders
     Shader sphereShader("sphere.vs", "sphere.frag");
-    Shader trailShader("trail.vs", "trail.frag");
 
     Simulation simulation;
 
@@ -91,11 +89,6 @@ int main() {
         glm::mat4 view = camera.GetViewMatrix();
         sphereShader.setMat4("projection", projection);
         sphereShader.setMat4("view", view);
-
-        // --- Activate, configure, and draw with trail shader ---
-        trailShader.use();
-        trailShader.setMat4("projection", projection);
-        trailShader.setMat4("view", view);
 
         simulation.draw(sphereShader, trailShader);
 

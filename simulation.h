@@ -10,5 +10,5 @@ public:
 
     Simulation();
     void update(float dt);
-    void draw(Shader& sphereShader, Shader& trailShader);
+    void draw(Shader& sphereShader);
 };
