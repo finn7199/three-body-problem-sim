@@ -127,7 +127,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="body.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="simulation.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="body.h" />
+    <ClInclude Include="camera.h" />
+    <ClInclude Include="shader.h" />
+    <ClInclude Include="simulation.h" />
+    <ClInclude Include="simulation_config.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="sphere.frag" />
+    <None Include="sphere.vs" />
+    <None Include="trail.frag" />
+    <None Include="trail.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
