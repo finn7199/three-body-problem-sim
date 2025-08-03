@@ -90,7 +90,7 @@ int main() {
         sphereShader.setMat4("projection", projection);
         sphereShader.setMat4("view", view);
 
-        simulation.draw(sphereShader, trailShader);
+        simulation.draw(sphereShader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
