@@ -1,1 +1,1 @@
-# three-body-problem-sim
+# Three Body Problem Simulation
