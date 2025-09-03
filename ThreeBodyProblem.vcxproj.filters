@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{9e36a0e5-cfe7-4b96-a1d5-4f0dd288ae8b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -22,6 +25,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="simulation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="particlesystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -41,11 +47,46 @@
     <ClInclude Include="camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="particlesystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="sphere.frag" />
-    <None Include="sphere.vs" />
-    <None Include="trail.frag" />
-    <None Include="trail.vs" />
+    <None Include="bloom_final.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="blur.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="quad.vs">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="skybox.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="skybox.vs">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="sphere.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="sphere.vs">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="trail.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="trail.vs">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="particle.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="particle.vs">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

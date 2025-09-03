@@ -129,16 +129,26 @@
   <ItemGroup>
     <ClCompile Include="body.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="particlesystem.cpp" />
     <ClCompile Include="simulation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="body.h" />
     <ClInclude Include="camera.h" />
+    <ClInclude Include="particlesystem.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="simulation.h" />
     <ClInclude Include="simulation_config.h" />
+    <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="bloom_final.frag" />
+    <None Include="blur.frag" />
+    <None Include="particle.frag" />
+    <None Include="particle.vs" />
+    <None Include="quad.vs" />
+    <None Include="skybox.frag" />
+    <None Include="skybox.vs" />
     <None Include="sphere.frag" />
     <None Include="sphere.vs" />
     <None Include="trail.frag" />

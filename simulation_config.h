@@ -8,7 +8,7 @@ const unsigned int SCR_WIDTH = 1600;
 const unsigned int SCR_HEIGHT = 900;
 
 // Simulation Settings
-const float G = 1500.0f; 
+const float G = 1500.0f;
 const float FIXED_TIMESTEP = 1.0f / 1000.0f;  // Run physics at x Hz
 
 // Define the properties for each body
@@ -18,6 +18,7 @@ struct BodyProperties {
     glm::vec3 initialPosition;
     glm::vec3 initialVelocity;
     glm::vec3 color;
+    bool isEmissive;
 };
 
 // An array holding the properties of our three bodies.
@@ -27,26 +28,31 @@ const std::vector<BodyProperties> initialBodies = {
     // initial position (x, y, z): Where the body starts.
     // initial velocity (vx, vy, vz): The direction and speed it starts with.
     // color (R, G, B): The color of the sphere, from 0.0 to 1.0.
+    // is Emmisive or not 
 
     {
-        // P1
-        5000.0f, 25.0f,
-        glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, -60.0f),
-        glm::vec3(1.0f, 1.0f, 0.7f)
+        // "Sun"
+        10000.0f, 20.0f,
+        glm::vec3(0.0f),
+        glm::vec3(0.0f),
+        glm::vec3(1.0f, 0.9f, 0.4f), // yellow/orange color
+        true
     },
     {
-        // P2
-        5000.0f, 20.0f,                       
-        glm::vec3(420.0f, -50.0f, 0.0f),      
-        glm::vec3(0.0f, -60.0f, 0.0f), 
-        glm::vec3(0.4f, 0.6f, 1.0f)
+        // "Earth"
+        300.0f, 15.0f,
+        glm::vec3(350.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 205.0f, 0.0f),
+        glm::vec3(0.3f, 0.5f, 1.0f),
+        false
     },
     {
-        // P3
-        5000.0f, 13.0f,
-        glm::vec3(-420.0f, 50.0f, 0.0f), 
-        glm::vec3(0.0f, 60.0f, 0.0f),
-        glm::vec3(0.8f, 0.8f, 0.8f)
+        // "Moon"
+        10.0f, 5.0f,
+        glm::vec3(360.0f, 0.0f, 0.0f),        // Positioned closer to Earth (10 units away)
+        // Earth's velocity + a slower orbital velocity for the Moon
+        glm::vec3(0.0f, 205.0f + 45.0f, 0.0f),
+        glm::vec3(0.7f, 0.7f, 0.7f),
+        false
     }
 };

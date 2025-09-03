@@ -4,9 +4,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 
-Body::Body(float m, float r, glm::vec3 pos, glm::vec3 vel, glm::vec3 col)
-    : mass(m), radius(r), position(pos), velocity(vel), color(col), acceleration(0.0f) {
+Body::Body(float m, float r, glm::vec3 pos, glm::vec3 vel, glm::vec3 col, bool emissive)
+    : mass(m), radius(r), position(pos), velocity(vel), color(col), isEmissive(emissive), acceleration(0.0f) {
     setupSphereMesh();
+    Trail = std::make_unique<ParticleSystem>();
 }
 
 void Body::setupSphereMesh() {
@@ -79,8 +80,7 @@ void Body::setupSphereMesh() {
     glBindVertexArray(0);
 }
 
-
-void Body::draw(Shader& sphereShader) {
+void Body::draw(Shader& sphereShader) const {
     // --- Draw the Body ---
     sphereShader.use();
     sphereShader.setVec3("objectColor", color);
@@ -96,4 +96,15 @@ void Body::draw(Shader& sphereShader) {
     glDrawElements(GL_TRIANGLE_STRIP, indexCount, GL_UNSIGNED_INT, 0);
 
     glBindVertexArray(0);
+    sphereShader.use();
+}
+
+void Body::UpdateTrail(float dt)
+{
+    Trail->Update(dt);
+}
+
+void Body::RenderTrail(const glm::mat4& view, const glm::mat4& projection) const
+{
+    Trail->Render(view, projection);
 }
