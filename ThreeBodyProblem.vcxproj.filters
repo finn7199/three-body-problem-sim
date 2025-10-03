@@ -88,5 +88,14 @@
     <None Include="particle.vs">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="emissive.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="cubemap.vs">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="irradiance_convolution.frag">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

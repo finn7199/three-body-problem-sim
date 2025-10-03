@@ -15,8 +15,10 @@ public:
     glm::vec3 color;
     float radius;
     bool isEmissive;
+    float metalness;
+    float roughness;
 
-    Body(float m, float r, glm::vec3 pos, glm::vec3 vel, glm::vec3 col, bool emissive);
+    Body(float m, float r, glm::vec3 pos, glm::vec3 vel, glm::vec3 col, bool emissive, float met, float rough);
     void draw(Shader& sphereShader) const;
 
     // Public members for the particle trails
