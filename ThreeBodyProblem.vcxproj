@@ -144,6 +144,9 @@
   <ItemGroup>
     <None Include="bloom_final.frag" />
     <None Include="blur.frag" />
+    <None Include="cubemap.vs" />
+    <None Include="emissive.frag" />
+    <None Include="irradiance_convolution.frag" />
     <None Include="particle.frag" />
     <None Include="particle.vs" />
     <None Include="quad.vs" />

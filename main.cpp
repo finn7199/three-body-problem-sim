@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <fstream> 
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -32,8 +33,9 @@ bool firstMouse = true;
 // Timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
-
 float accumulator = 0.0f;
+
+Simulation* simulation = nullptr;
 
 int main() {
     glfwInit();
@@ -54,8 +56,10 @@ int main() {
     // Tell GLFW to capture our mouse
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { /* ... error handling ... */ return -1; }
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { std::cout << "Failed to initialize GLAD" << std::endl; return -1; }
 
+    simulation = new Simulation();
+    simulation->SetIntegrator(IntegratorMethod::RK4);
     // Configure global opengl state
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -66,6 +70,16 @@ int main() {
     Shader skyboxShader("skybox.vs", "skybox.frag");
     Shader blurShader("quad.vs", "blur.frag");
     Shader bloomFinalShader("quad.vs", "bloom_final.frag");
+
+    std::vector<std::string> faces{
+    "skybox/px.jpg",  // Right
+    "skybox/nx.jpg",  // Left
+    "skybox/py.jpg",  // Top
+    "skybox/ny.jpg",  // Bottom
+    "skybox/pz.jpg",  // Front
+    "skybox/nz.jpg"   // Back
+    };
+    unsigned int cubemapTexture = loadCubemap(faces);
 
     // --- Skybox setup ---
     float skyboxVertices[] = {
@@ -91,15 +105,62 @@ int main() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    std::vector<std::string> faces{
-    "skybox/px.jpg",  // Right
-    "skybox/nx.jpg",  // Left
-    "skybox/py.jpg",  // Top
-    "skybox/ny.jpg",  // Bottom
-    "skybox/pz.jpg",  // Front
-    "skybox/nz.jpg"   // Back
+    // --- IBL SETUP USING 6 JPEG FILES ---
+   // This process creates our irradiance map from a standard cubemap.
+   // 1. Create a framebuffer for our off-screen rendering
+    unsigned int captureFBO, captureRBO;
+    glGenFramebuffers(1, &captureFBO);
+    glGenRenderbuffers(1, &captureRBO);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRBO);
+
+    // 2. Create an empty cubemap to store the final irradiance map
+    unsigned int irradianceMap;
+    glGenTextures(1, &irradianceMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+    for (unsigned int i = 0; i < 6; ++i) {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 32, 32, 0, GL_RGB, GL_FLOAT, nullptr);
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // 3. Set up the projection and view matrices for rendering to the cubemap faces
+    glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+    glm::mat4 captureViews[] =
+    {
+       glm::lookAt(glm::vec3(0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+       glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+       glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+       glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+       glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+       glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
     };
-    unsigned int cubemapTexture = loadCubemap(faces);
+
+    // 4. Use the "irradiance_convolution" shader to process the skybox
+    Shader irradianceShader("cubemap.vs", "irradiance_convolution.frag");
+    irradianceShader.use();
+    irradianceShader.setInt("environmentMap", 0);
+    irradianceShader.setMat4("projection", captureProjection);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture); // original skybox cubemap
+
+    glViewport(0, 0, 32, 32); // Render to a small 32x32 cubemap for the blur
+    glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
+    for (unsigned int i = 0; i < 6; ++i)
+    {
+        irradianceShader.setMat4("view", captureViews[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradianceMap, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindVertexArray(skyboxVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // --- Bloom Framebuffer Setup ---
     unsigned int hdrFBO;
@@ -161,12 +222,18 @@ int main() {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
-
-    Simulation simulation;
-
     // Light source position
     glm::vec3 lightPos(0.0f, 0.0f, 100.0f);
 
+    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+
+    // --- ENERGY LOGGING SETUP ---
+    std::ofstream energyLog("energy_log.csv");
+    energyLog << "Time,TotalEnergy\n"; // Write the CSV header
+    double totalSimTime = 0.0;
+    int physicsSteps = 0;
+    // --- END OF LOGGING SETUP --
+    
     // render loop
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = (float)glfwGetTime();
@@ -180,39 +247,63 @@ int main() {
         const int MAX_STEPS_PER_FRAME = 5;
         int steps_taken = 0;
         while (accumulator >= FIXED_TIMESTEP && steps_taken < MAX_STEPS_PER_FRAME) {
-            simulation.update(FIXED_TIMESTEP);
+            simulation->update(FIXED_TIMESTEP);
             accumulator -= FIXED_TIMESTEP;
             steps_taken++;
+
+            // --- LOGGING LOGIC ---
+            totalSimTime += FIXED_TIMESTEP;
+            physicsSteps++;
+            // Log the energy every 10 physics steps to keep the file size reasonable
+            if (physicsSteps % 10 == 0)
+            {
+                double totalEnergy = simulation->CalculateTotalEnergy();
+                energyLog << totalSimTime << "," << totalEnergy << "\n";
+            }
+            // --- END OF LOGGING LOGIC ---
         }
 
         // --- RENDER SCENE TO HDR FRAMEBUFFER ---
-        glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 10000.0f);
         glm::mat4 view = camera.GetViewMatrix();
+        glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // Draw Spheres
+        glm::vec3 lightPos = simulation->bodies[0].position;
+        glm::vec3 lightColor = glm::vec3(1.0f);
+
+        // Render space objects
         sphereShader.use();
         sphereShader.setMat4("projection", projection);
         sphereShader.setMat4("view", view);
-        glm::vec3 lightPos = simulation.bodies[0].position;
+        // Set uniforms that are the same for all objects
         sphereShader.setVec3("lightPos", lightPos);
-        sphereShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
-        for (const auto& body : simulation.bodies) {
+        sphereShader.setVec3("lightColor", lightColor);
+        sphereShader.setVec3("viewPos", camera.Position);
+        // --- IBL ---
+        sphereShader.setInt("irradianceMap", 1); // Tell shader to use texture unit 1
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
+
+        for (const auto& body : simulation->bodies) {
+            // Set the uniforms that are unique to this body
             sphereShader.setBool("isEmissive", body.isEmissive);
+            sphereShader.setVec3("objectColor", body.color);
+            sphereShader.setFloat("shininess", 10.0f); // Could also be a property per-body
+
             body.draw(sphereShader);
         }
 
         // --- RENDER PARTICLE TRAILS ---
-        glDisable(GL_DEPTH_TEST);
+        //glDisable(GL_DEPTH_TEST);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
         glDepthMask(GL_FALSE);
-        for (const auto& body : simulation.bodies) {
+        for (const auto& body : simulation->bodies) {
             body.RenderTrail(view, projection);
         }
         glDepthMask(GL_TRUE);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_DEPTH_TEST);
+       // glEnable(GL_DEPTH_TEST);
 
         // --- BLUR BRIGHT FRAGMENTS (BLOOM PASS) ---
         bool horizontal = true, first_iteration = true;
@@ -254,13 +345,15 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
         bloomFinalShader.setInt("scene", 0);
         bloomFinalShader.setInt("bloomBlur", 1);
-        bloomFinalShader.setFloat("exposure", 0.9f);
+        bloomFinalShader.setFloat("exposure", 0.75f);
         glBindVertexArray(quadVAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+    energyLog.close();
+    delete simulation;
     glfwTerminate();
     return 0;
 }
@@ -278,6 +371,19 @@ void processInput(GLFWwindow* window) {
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
+
+    if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+        simulation->LoadScenario(Scenario::FIGURE_EIGHT);
+    if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+        simulation->LoadScenario(Scenario::SOLAR_SYSTEM);
+
+    //Integrator selection
+    if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS)
+        simulation->SetIntegrator(IntegratorMethod::EULER);
+    if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS)
+        simulation->SetIntegrator(IntegratorMethod::LEAPFROG);
+    if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS)
+        simulation->SetIntegrator(IntegratorMethod::RK4);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
