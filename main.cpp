@@ -222,9 +222,6 @@ int main() {
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
-    // Light source position
-    glm::vec3 lightPos(0.0f, 0.0f, 100.0f);
-
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
     // --- ENERGY LOGGING SETUP ---
@@ -269,27 +266,33 @@ int main() {
         glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::vec3 lightPos = simulation->bodies[0].position;
-        glm::vec3 lightColor = glm::vec3(1.0f);
-
         // Render space objects
         sphereShader.use();
         sphereShader.setMat4("projection", projection);
         sphereShader.setMat4("view", view);
-        // Set uniforms that are the same for all objects
-        sphereShader.setVec3("lightPos", lightPos);
-        sphereShader.setVec3("lightColor", lightColor);
         sphereShader.setVec3("viewPos", camera.Position);
         // --- IBL ---
         sphereShader.setInt("irradianceMap", 1); // Tell shader to use texture unit 1
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceMap);
 
-        for (const auto& body : simulation->bodies) {
+        // Set multi-light uniforms for all bodies
+        int numBodies = (int)simulation->bodies.size();
+        sphereShader.setInt("numLights", numBodies);
+        for (int i = 0; i < numBodies; i++) {
+            sphereShader.setVec3("lightPositions[" + std::to_string(i) + "]", simulation->bodies[i].position);
+            sphereShader.setVec3("lightColors[" + std::to_string(i) + "]", simulation->bodies[i].color);
+            sphereShader.setBool("lightEmissive[" + std::to_string(i) + "]", simulation->bodies[i].isEmissive);
+        }
+
+        for (int bodyIdx = 0; bodyIdx < numBodies; bodyIdx++) {
+            const auto& body = simulation->bodies[bodyIdx];
             // Set the uniforms that are unique to this body
+            sphereShader.setInt("bodyIndex", bodyIdx);
             sphereShader.setBool("isEmissive", body.isEmissive);
             sphereShader.setVec3("objectColor", body.color);
-            sphereShader.setFloat("shininess", 10.0f); // Could also be a property per-body
+            sphereShader.setFloat("metalness", body.metalness);
+            sphereShader.setFloat("roughness", body.roughness);
 
             body.draw(sphereShader);
         }
