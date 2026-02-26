@@ -4,6 +4,7 @@
 #include "Body.h"
 #include "Shader.h"
 #include "simulation_config.h"
+#include "gpu_accelerator.h"
 
 class Simulation {
 public:
@@ -15,6 +16,8 @@ public:
     void LoadScenario(Scenario scenario);
     double CalculateTotalEnergy() const;
     void SetIntegrator(IntegratorMethod method);
+    void SetUseGPU(bool useGPU);
+    bool IsUsingGPU() const;
 
 private:
     float m_G;
@@ -25,4 +28,7 @@ private:
     void updateEuler(float dt);
     void updateLeapfrog(float dt);
     void updateRK4(float dt);
+
+    GpuAccelerator m_gpuAccelerator;
+    bool m_useGPU;
 };

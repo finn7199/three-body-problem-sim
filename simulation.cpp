@@ -1,7 +1,8 @@
 #include "Simulation.h"
 #include "simulation_config.h"
 
-Simulation::Simulation() {
+Simulation::Simulation() : m_useGPU(false) {
+    m_gpuAccelerator.init(64);
     // Load a default scenario on startup
     LoadScenario(Scenario::FIGURE_EIGHT);
 }
@@ -26,13 +27,20 @@ void Simulation::LoadScenario(Scenario scenario)
         );
     }
 
+    // Upload masses to GPU (only changes on scenario load)
+    std::vector<float> masses;
+    for (const auto& body : bodies) {
+        masses.push_back(body.mass);
+    }
+    m_gpuAccelerator.uploadMasses(masses);
+
     // FOR LEAPFROG METHOD ONLY
     // This performs the initial half-step "kick" required for Leapfrog to start correctly.
     std::vector<glm::vec3> initial_accel = calculateAccelerations(get_body_positions());
     for (int i = 0; i < bodies.size(); ++i) {
         bodies[i].velocity -= initial_accel[i] * (FIXED_TIMESTEP / 2.0f);
     }
-    
+
 }
 void Simulation::SetIntegrator(IntegratorMethod method) {
     m_currentMethod = method;
@@ -50,6 +58,10 @@ std::vector<glm::vec3> Simulation::get_body_positions() {
 
 // Function uses the passed-in positions and the class's 'bodies' member for mass.
 std::vector<glm::vec3> Simulation::calculateAccelerations(const std::vector<glm::vec3>& positions) {
+    if (m_useGPU) {
+        return m_gpuAccelerator.calculateAccelerations(positions, m_G, (int)bodies.size());
+    }
+
     std::vector<glm::vec3> accelerations(bodies.size(), glm::vec3(0.0f));
 
     for (int i = 0; i < bodies.size(); ++i) {
@@ -113,19 +125,7 @@ void Simulation::update(float dt) {
 
 void Simulation::updateEuler(float dt) {
     // Step 1: Calculate forces and accelerations for all bodies
-    std::vector<glm::vec3> accelerations(bodies.size(), glm::vec3(0.0f));
-    for (int i = 0; i < bodies.size(); ++i) {
-        for (int j = 0; j < bodies.size(); ++j) {
-            if (i == j) continue;
-
-            float dist_sq = glm::length2(bodies[j].position - bodies[i].position);
-            if (dist_sq < 0.1f) dist_sq = 0.1f;
-
-            glm::vec3 force_dir = glm::normalize(bodies[j].position - bodies[i].position);
-            glm::vec3 force = force_dir * (m_G * bodies[i].mass * bodies[j].mass / dist_sq);
-            accelerations[i] += force / bodies[i].mass;
-        }
-    }
+    std::vector<glm::vec3> accelerations = calculateAccelerations(get_body_positions());
 
     // Step 2: Update velocities and positions
     for (int i = 0; i < bodies.size(); ++i) {
@@ -266,6 +266,14 @@ void Simulation::updateRK4(float dt) {
     for (auto& body : bodies) {
         body.UpdateTrail(dt);
     }
+}
+
+void Simulation::SetUseGPU(bool useGPU) {
+    m_useGPU = useGPU;
+}
+
+bool Simulation::IsUsingGPU() const {
+    return m_useGPU;
 }
 
 void Simulation::draw(Shader& sphereShader) {

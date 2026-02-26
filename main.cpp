@@ -39,7 +39,7 @@ Simulation* simulation = nullptr;
 
 int main() {
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -57,6 +57,12 @@ int main() {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) { std::cout << "Failed to initialize GLAD" << std::endl; return -1; }
+
+    if (!GLAD_GL_VERSION_4_3) {
+        std::cout << "ERROR: OpenGL 4.3 not supported. GPU compute shaders require OpenGL 4.3+." << std::endl;
+        glfwTerminate();
+        return -1;
+    }
 
     simulation = new Simulation();
     simulation->SetIntegrator(IntegratorMethod::RK4);
@@ -387,6 +393,19 @@ void processInput(GLFWwindow* window) {
         simulation->SetIntegrator(IntegratorMethod::LEAPFROG);
     if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS)
         simulation->SetIntegrator(IntegratorMethod::RK4);
+
+    // GPU-CPU toggle
+    static bool gKeyWasPressed = false;
+    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
+        if (!gKeyWasPressed) {
+            bool newState = !simulation->IsUsingGPU();
+            simulation->SetUseGPU(newState);
+            std::cout << "Force calculation: " << (newState ? "GPU (compute shader)" : "CPU") << std::endl;
+            gKeyWasPressed = true;
+        }
+    } else {
+        gKeyWasPressed = false;
+    }
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {

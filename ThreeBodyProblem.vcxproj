@@ -128,6 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="body.cpp" />
+    <ClCompile Include="gpu_accelerator.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="particlesystem.cpp" />
     <ClCompile Include="simulation.cpp" />
@@ -135,6 +136,8 @@
   <ItemGroup>
     <ClInclude Include="body.h" />
     <ClInclude Include="camera.h" />
+    <ClInclude Include="compute_shader.h" />
+    <ClInclude Include="gpu_accelerator.h" />
     <ClInclude Include="particlesystem.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="simulation.h" />
@@ -154,6 +157,7 @@
     <None Include="skybox.vs" />
     <None Include="sphere.frag" />
     <None Include="sphere.vs" />
+    <None Include="gravity.comp" />
     <None Include="trail.frag" />
     <None Include="trail.vs" />
   </ItemGroup>

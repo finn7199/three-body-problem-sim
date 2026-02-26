@@ -1,0 +1,45 @@
+#version 430 core
+
+layout(local_size_x = 64) in;
+
+// std430 layout: use vec4 to avoid cross-vendor alignment issues with vec3
+layout(std430, binding = 0) readonly buffer PositionBuffer {
+    vec4 positions[];
+};
+
+layout(std430, binding = 1) readonly buffer MassBuffer {
+    float masses[];
+};
+
+layout(std430, binding = 2) writeonly buffer AccelerationBuffer {
+    vec4 accelerations[];
+};
+
+uniform float u_G;
+uniform int u_NumBodies;
+
+void main() {
+    uint i = gl_GlobalInvocationID.x;
+    if (i >= u_NumBodies)
+        return;
+
+    vec3 pos_i = positions[i].xyz;
+    vec3 accel = vec3(0.0);
+
+    for (int j = 0; j < u_NumBodies; ++j) {
+        if (j == int(i))
+            continue;
+
+        vec3 diff = positions[j].xyz - pos_i;
+        float dist_sq = dot(diff, diff);
+        // Softening to prevent singularity (matches CPU: 0.1)
+        dist_sq = max(dist_sq, 0.1);
+
+        vec3 force_dir = normalize(diff);
+        // accel_i += G * m_j / r^2 * direction
+        // (force = G * m_i * m_j / r^2, then accel = force / m_i, so m_i cancels)
+        accel += force_dir * (u_G * masses[j] / dist_sq);
+    }
+
+    accelerations[i] = vec4(accel, 0.0);
+}
